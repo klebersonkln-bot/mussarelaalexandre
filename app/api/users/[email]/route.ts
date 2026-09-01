@@ -68,7 +68,7 @@ export async function PATCH(
       action: "alterou",
       entityType: "usuário",
       entityId: email,
-      summary: `Alterou o acesso de ${displayName}: perfil ${role}, entregas ${updated.canRecordDeliveries ? "permitidas" : "somente consulta"} e pagamentos ${updated.canRecordPayments ? "permitidos" : "somente consulta"}.`,
+      summary: `Alterou o acesso de ${displayName}: perfil ${role}, entregas ${updated.canRecordDeliveries ? "permitidas" : "somente consulta"}, pagamentos ${updated.canRecordPayments ? "permitidos" : "somente consulta"} e usuário ${updated.active ? "ativo" : "inativo"}.`,
       details: {
         before: {
           displayName: existing.displayName,
@@ -89,6 +89,48 @@ export async function PATCH(
         hasPassword: Boolean(newPassword || existing.passwordHash),
       },
     });
+  } catch (error) {
+    return apiError(error);
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  context: { params: Promise<{ email: string }> },
+) {
+  try {
+    requireSameOrigin(request);
+    const actor = await getActor();
+    requireSupervisor(actor);
+    const { email: rawEmail } = await context.params;
+    const email = decodeURIComponent(rawEmail).toLowerCase();
+
+    if (email === actor.email) {
+      throw new ApiError(400, "O supervisor conectado não pode excluir a própria conta.");
+    }
+
+    const db = getDb();
+    const [existing] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    if (!existing) throw new ApiError(404, "Usuário não encontrado.");
+
+    await db.delete(sessions).where(eq(sessions.userEmail, email));
+    await db.delete(users).where(eq(users.email, email));
+    await writeAudit({
+      actor,
+      action: "excluiu",
+      entityType: "usuário",
+      entityId: email,
+      summary: `Excluiu o usuário ${existing.displayName} (${email}).`,
+      details: {
+        displayName: existing.displayName,
+        role: existing.role,
+        canRecordDeliveries: existing.canRecordDeliveries,
+        canRecordPayments: existing.canRecordPayments,
+        active: existing.active,
+      },
+    });
+
+    return Response.json({ ok: true });
   } catch (error) {
     return apiError(error);
   }
