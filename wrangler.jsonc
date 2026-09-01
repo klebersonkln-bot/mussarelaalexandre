@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "controle-mussarela",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "controle-mussarela-db",
+      "database_id": "ff5e91f0-fac0-40cb-aead-1b47b7620f73",
+      "migrations_dir": "drizzle"
+    }
+  ]
+}
