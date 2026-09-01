@@ -23,7 +23,8 @@ export const actorColumns = {
 
 const SESSION_COOKIE = "mussarela_session";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 14;
-const PASSWORD_ITERATIONS = 310_000;
+// Cloudflare Workers limits Web Crypto PBKDF2 operations to 100,000 iterations.
+const PASSWORD_ITERATIONS = 100_000;
 
 export function normalizeEmail(value: unknown) {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
